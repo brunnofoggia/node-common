@@ -17,8 +17,8 @@ export class CrudService<ENTITY> {
         return this.repository;
     }
 
-    count(): Promise<number> {
-        return this.getRepository().count();
+    count(options: any = {}): Promise<number> {
+        return this.getRepository().count(options);
     }
 
     private _findAll(options: any = {}): Promise<ENTITY[]> {

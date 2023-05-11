@@ -2,7 +2,7 @@ import _debug from 'debug';
 const debug = _debug('app:ApiProvider');
 
 import axios from 'axios';
-import _ from 'lodash';
+import { defaultsDeep } from 'lodash';
 import { HttpStatusCode } from 'axios';
 
 import { throwHttpException } from '../utils/errors';
@@ -44,7 +44,7 @@ export class ApiProvider {
     }
 
     static async _fetch(_options) {
-        const options = _.defaultsDeep(_options, {
+        const options = defaultsDeep(_options, {
             headers: this.defaultHeaders()
         });
 

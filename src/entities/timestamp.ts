@@ -1,5 +1,5 @@
 import { Column } from 'typeorm';
-import { set } from '../config/entities';
+import { set } from '../utils/entities';
 
 export class TimestampEntity {
     @Column(set({

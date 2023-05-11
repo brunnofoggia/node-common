@@ -6,7 +6,7 @@ import CryptoJS from 'crypto-js';
 export class CacheUtil {
     protected static isCacheActivated = true;
 
-    public static initialize(activateCache = true) {
+    public static set(activateCache = true) {
         this.isCacheActivated = activateCache;
     }
 
