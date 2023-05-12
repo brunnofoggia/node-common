@@ -1,4 +1,6 @@
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { HttpStatusCode } from 'axios';
+import { throwHttpException } from '../utils/errors';
+
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import _ from 'lodash';
 import { IdInterface } from '../interfaces/id.interface';
@@ -74,14 +76,14 @@ export class CrudService<ENTITY> {
     async checkIdTaken(id: number | string): Promise<boolean> {
         const item = await this._findById(id);
         if (!item)
-            throw new HttpException('', HttpStatus.NOT_FOUND);
+            throwHttpException('', HttpStatusCode.NotFound);
         return true;
     }
 
     async checkIdNotTaken(id: number | string): Promise<boolean> {
         const item = await this._findById(id);
         if (item)
-            throw new HttpException('', HttpStatus.FOUND);
+            throwHttpException('', HttpStatusCode.Found);
         return true;
     }
 
