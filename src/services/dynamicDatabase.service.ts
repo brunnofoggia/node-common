@@ -24,6 +24,11 @@ export abstract class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
         if (!DynamicDatabase.dataSource[_alias]) {
             DynamicDatabase.dataSource[_alias] = await this.DatabaseConnect({ database, databaseDir, synchronize });
         }
+        return DynamicDatabase.dataSource[_alias];
+    }
+
+    static getDataSource(_alias) {
+        return DynamicDatabase.dataSource[_alias];
     }
 
     initialize() {
