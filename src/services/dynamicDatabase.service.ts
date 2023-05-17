@@ -88,4 +88,15 @@ export abstract class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
         }
     }
 
+    static closeConnections() {
+        for (const alias of DynamicDatabase.dataSource) {
+            this.closeConnection(alias);
+        }
+    }
+
+    static async closeConnection(alias) {
+        await DynamicDatabase.dataSource[alias].destroy();
+        delete DynamicDatabase.dataSource[alias];
+    }
+
 }
