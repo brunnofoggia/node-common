@@ -2,16 +2,19 @@
 import _debug from 'debug';
 const debug = _debug('app:DynamicDatabase');
 
+import { keys } from 'lodash';
 import { QueryRunner, Repository } from 'typeorm';
 import { CrudService } from './crud.service';
 // import _ from 'lodash';
 
-export abstract class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
+export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
     protected static DatabaseConnect;
-    protected static dataSource: any = {};
+    private static dataSources: any = {};
+
     protected dataSource;
     protected repository: Repository<any>;
 
+    protected poolId = 'default';
     protected databaseAlias;
     protected entity;
 
@@ -19,16 +22,53 @@ export abstract class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
         this.DatabaseConnect = DatabaseConnect;
     }
 
-    static async setDataSource({ database = '', databaseDir = '', alias = '', synchronize = false }) {
+    static async setDataSource({ poolId = 'default', database = '', databaseDir = '', alias = '', synchronize = false }) {
         const _alias = alias || database;
-        if (!DynamicDatabase.dataSource[_alias]) {
-            DynamicDatabase.dataSource[_alias] = await this.DatabaseConnect({ database, databaseDir, synchronize });
+        const datasourcePath = this.defineDatasourcePath(_alias, poolId);
+        if (!this.getDataSource(_alias, poolId)) {
+            DynamicDatabase.dataSources[datasourcePath] = await this.DatabaseConnect({ database, databaseDir, synchronize });
         }
-        return DynamicDatabase.dataSource[_alias];
+        return this.getDataSource(_alias, poolId);
     }
 
-    static getDataSource(_alias) {
-        return DynamicDatabase.dataSource[_alias];
+    static getDataSource(alias, poolId = 'default') {
+        return DynamicDatabase.dataSources[this.defineDatasourcePath(alias, poolId)];
+    }
+
+    static defineDatasourcePath(alias, poolId = 'default') {
+        return [poolId, alias].join(':');
+    }
+
+    static listConnections() {
+        return keys(this.dataSources);
+    }
+
+    static async closeConnections(poolId = 'default') {
+        for (const datasourcePath in DynamicDatabase.dataSources) {
+            if (poolId && !datasourcePath.startsWith(poolId)) continue;
+
+            await this._closeConnection(datasourcePath);
+        }
+    }
+
+    static async closeConnection(alias, poolId = 'default') {
+        const datasourcePath = this.defineDatasourcePath(alias, poolId);
+        await this._closeConnection(datasourcePath);
+    }
+
+    static async _closeConnection(datasourcePath) {
+        // console.log('close this conn', datasourcePath);
+        await DynamicDatabase.dataSources[datasourcePath]?.destroy();
+        delete DynamicDatabase.dataSources[datasourcePath];
+        // DynamicDatabase.dataSources = omit(DynamicDatabase.dataSources, datasourcePath);
+
+    }
+
+    constructor(poolId = '') {
+        super();
+
+        if (poolId)
+            this.poolId = poolId;
     }
 
     initialize() {
@@ -41,18 +81,22 @@ export abstract class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
 
     setDataSource() {
         if (!this.dataSource && this.databaseAlias) {
-            this.dataSource = DynamicDatabase.dataSource[this.databaseAlias];
+            this.dataSource = DynamicDatabase.getDataSource(this.databaseAlias, this.poolId);
         }
         return this.dataSource;
     }
 
     getRepository() {
-        return this.repository || this.setRepository();
+        const repository = this.repository || this.setRepository();
+        return repository;
     }
 
     setRepository() {
-        if (!this.repository && this.entity)
-            this.repository = this.getDataSource().getRepository(this.entity);
+        if (!this.repository && this.entity) {
+            const datasource = this.getDataSource();
+            if (!datasource) throw new Error(`connection not found. alias: ${this.databaseAlias} , poolId: ${this.poolId}`);
+            this.repository = datasource.getRepository(this.entity);
+        }
         return this.repository;
     }
 
@@ -86,17 +130,6 @@ export abstract class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
         } catch (error) {
             debug(error);
         }
-    }
-
-    static closeConnections() {
-        for (const alias of DynamicDatabase.dataSource) {
-            this.closeConnection(alias);
-        }
-    }
-
-    static async closeConnection(alias) {
-        await DynamicDatabase.dataSource[alias].destroy();
-        delete DynamicDatabase.dataSource[alias];
     }
 
 }
