@@ -1,6 +1,6 @@
 
 import _debug from 'debug';
-const debug = _debug('app:DynamicDatabase');
+const debug = _debug('app:db:DynamicDatabase');
 
 import { keys } from 'lodash';
 import { QueryRunner, Repository } from 'typeorm';
