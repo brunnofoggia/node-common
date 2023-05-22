@@ -30,7 +30,7 @@ export class ApiProvider {
             const data = typeof error.response?.data === 'object' ? error.response?.data : {};
             const dataStr: any = typeof data === 'object' ? JSON.stringify(data) : error.response?.data || '';
             debug([error.code, error.message || '', dataStr].join(";\n"));
-            throwHttpException(data.message || error.code, HttpStatusCode.BadGateway);
+            throwHttpException(error, HttpStatusCode.BadGateway);
         }
     }
 
