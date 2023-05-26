@@ -15,7 +15,7 @@ export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
     protected repository: Repository<any>;
 
     protected poolId = 'default';
-    protected databaseAlias;
+    protected databaseAlias = 'default';
     protected entity;
 
     static setDatabaseConnect(DatabaseConnect) {
