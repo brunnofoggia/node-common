@@ -2,7 +2,7 @@ import _debug from 'debug';
 const debug = _debug('app:monitor');
 
 export class ProcessUtil {
-    protected times: any = {};
+    public times: any = {};
     protected static _instance: ProcessUtil;
 
     static instance() {
