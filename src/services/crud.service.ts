@@ -24,15 +24,25 @@ export class CrudService<ENTITY> {
     }
 
     private _findAll(options: any = {}): Promise<ENTITY[]> {
-        const order: any = {};
-        order[this.idAttribute] = 'ASC';
+        const defaultOrder: any = {};
+        defaultOrder[this.idAttribute] = 'ASC';
+
+        /**
+         * bug found when sending "order: {}" (empty object)
+         * bug occurs when dealing with long pagination process with tons of data
+         * scenario:
+         * { skip: 500000, take: 50000, order: {} } (into a view, not a table)
+         * solution:
+         * always have an order by
+         */
+        const order = _.size(options.order) ? options.order : defaultOrder;
 
         options = {
-            ...options,
+            ..._.omit(options, 'order'),
             where: {
                 ...options.where,
             },
-            order: options.order || order
+            order,
         };
 
         return this.getRepository().find(options);
