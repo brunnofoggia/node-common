@@ -11,7 +11,7 @@ export class ProcessUtil {
     }
 
     time(name) {
-        this.times[name] = Date.now();
+        return this.times[name] = Date.now();
     }
 
     timeEnd(name) {
