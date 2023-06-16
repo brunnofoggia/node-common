@@ -39,9 +39,6 @@ export class CrudService<ENTITY> {
 
         options = {
             ..._.omit(options, 'order'),
-            where: {
-                ...options.where,
-            },
             order,
         };
 
