@@ -9,7 +9,7 @@ import { IsNull } from 'typeorm';
 export class CrudService<ENTITY> {
     protected repository;
     protected idAttribute = 'id';
-    protected _deleteRecords = false;
+    protected _deleteRecords;
 
     getIdAttribute() {
         return this.idAttribute;
@@ -69,11 +69,15 @@ export class CrudService<ENTITY> {
         const where: any = { ...options.where };
         where[this.idAttribute] = id;
 
-        return (await this.find({
-            ...options,
-            where,
-            take: 1,
-        })).shift() || null;
+        return (
+            (
+                await this.find({
+                    ...options,
+                    where,
+                    take: 1,
+                })
+            ).shift() || null
+        );
     }
 
     async findById(id: number | string, options: any = {}): Promise<ENTITY> {
@@ -82,15 +86,13 @@ export class CrudService<ENTITY> {
 
     async checkIdTaken(id: number | string): Promise<boolean> {
         const item = await this._findById(id);
-        if (!item)
-            throwHttpException('', HttpStatusCode.NotFound);
+        if (!item) throwHttpException('', HttpStatusCode.NotFound);
         return true;
     }
 
     async checkIdNotTaken(id: number | string): Promise<boolean> {
         const item = await this._findById(id);
-        if (item)
-            throwHttpException('', HttpStatusCode.Found);
+        if (item) throwHttpException('', HttpStatusCode.Found);
         return true;
     }
 
@@ -165,13 +167,17 @@ export class CrudService<ENTITY> {
     }
 
     deleteRecords() {
-        return this._deleteRecords;
+        return !!this._deleteRecords;
     }
 
-    async createIfNotExists(_item: QueryDeepPartialEntity<ENTITY>, where: QueryDeepPartialEntity<ENTITY>, query: any = {}): Promise<IdInterface | ENTITY> {
+    async createIfNotExists(
+        _item: QueryDeepPartialEntity<ENTITY>,
+        where: QueryDeepPartialEntity<ENTITY>,
+        query: any = {},
+    ): Promise<IdInterface | ENTITY> {
         let item: any = (await this.findAll({ where }))?.shift();
         if (!item) {
-            item = (await this.create({ ..._item }, query));
+            item = await this.create({ ..._item }, query);
         }
 
         let result: any = { id: _.result(item, this.idAttribute) };

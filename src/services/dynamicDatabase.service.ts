@@ -1,8 +1,7 @@
-
 import _debug from 'debug';
 const debug = _debug('app:db:DynamicDatabase');
 
-import { keys } from 'lodash';
+import { indexOf, keys } from 'lodash';
 import { QueryRunner, Repository } from 'typeorm';
 import { CrudService } from './crud.service';
 // import _ from 'lodash';
@@ -61,14 +60,12 @@ export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
         await DynamicDatabase.dataSources[datasourcePath]?.destroy();
         delete DynamicDatabase.dataSources[datasourcePath];
         // DynamicDatabase.dataSources = omit(DynamicDatabase.dataSources, datasourcePath);
-
     }
 
     constructor(poolId = '') {
         super();
 
-        if (poolId)
-            this.poolId = poolId;
+        if (poolId) this.poolId = poolId;
     }
 
     initialize() {
@@ -103,7 +100,9 @@ export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
     async checkIfTableExists() {
         try {
             const tableName = this.getDataSource().getMetadata(this.entity).tableName;
-            const hasTable = await this.getDataSource().query(`SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '${tableName}')`);
+            const hasTable = await this.getDataSource().query(
+                `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '${tableName}')`,
+            );
             debug(`Table ${tableName} exists: ${hasTable[0].exists}`);
             return true;
         } catch (error) {
@@ -113,18 +112,13 @@ export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
     }
 
     async insertBulkData(data: Array<any>, queryRunner?: QueryRunner) {
-        const result = await this.getRepository().createQueryBuilder('', queryRunner)
-            .insert()
-            .into(this.entity)
-            .values(data)
-            .execute();
+        const result = await this.getRepository().createQueryBuilder('', queryRunner).insert().into(this.entity).values(data).execute();
         debug(`Inserted ${result?.raw?.length} rows`);
     }
 
     async truncate() {
         try {
-            const query = this.getRepository().createQueryBuilder()
-                .delete();
+            const query = this.getRepository().createQueryBuilder().delete();
             const result = await query.execute();
             debug(`Deleted ${result.affected} rows`);
         } catch (error) {
@@ -132,4 +126,10 @@ export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
         }
     }
 
+    deleteRecords() {
+        if (typeof this._deleteRecords === 'undefined') {
+            this._deleteRecords = indexOf(keys(this.getDataSource().getMetadata(this.entity).propertiesMap), 'deletedAt') < 0;
+        }
+        return this._deleteRecords;
+    }
 }
