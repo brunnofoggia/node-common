@@ -1,4 +1,10 @@
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+// import timezone from 'dayjs/plugin/timezone';
+dayjs.extend(utc);
+// dayjs.extend(timezone);
 import { cloneDeep, defaults, omit } from 'lodash';
+
 import { throwHttpException } from './errors';
 
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -47,4 +53,10 @@ export const queuelize = async (condition, _execute, config: any = {}) => {
     }
 
     await finish();
+};
+
+export const getDateForTimezone = (_timezoneOffset = 0, date = undefined, keepLocalTime = false) => {
+    !date && (date = undefined);
+    const timezoneOffset = +(_timezoneOffset || 0);
+    return dayjs(date).utcOffset(timezoneOffset, keepLocalTime);
 };
