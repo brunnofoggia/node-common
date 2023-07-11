@@ -8,44 +8,48 @@ import { HttpStatusCode } from 'axios';
 import { throwHttpException } from '../utils/errors';
 import { sleep } from '../utils';
 
-
 export class ApiProvider {
     static _sleep = 1000;
     static baseUrl = '';
 
-    static async fetch(options, _retry = 3) {
+    static async request(options, _retry = 3) {
         if (!this.baseUrl) throwHttpException('api base url not found', HttpStatusCode.BadGateway);
         const url = /^http/.test(options.url) ? options.url : [this.baseUrl, options.url].join('/');
 
         try {
-            return await this._fetch({
+            return await this._request({
                 ...options,
                 url,
             });
         } catch (error) {
             if (this.retryCheck(error, _retry)) {
-                return await this.retryFetch(options, error, _retry);
+                return await this.retryRequest(options, error, _retry);
             }
 
             const data = typeof error.response?.data === 'object' ? error.response?.data : {};
             const dataStr: any = typeof data === 'object' ? JSON.stringify(data) : error.response?.data || '';
-            debug([error.code, error.message || '', dataStr, url].join(";\n"));
+            debug([error.code, error.message || '', dataStr, url].join(';\n'));
             throwHttpException(error, HttpStatusCode.BadGateway);
         }
+    }
+
+    /* alias */
+    static async fetch(options, _retry = 3) {
+        return this.request(options, _retry);
     }
 
     static retryCheck(error, _retry) {
         return error.code === 'ECONNREFUSED' && _retry > 0;
     }
 
-    static async retryFetch(options, error, _retry) {
+    static async retryRequest(options, error, _retry) {
         await sleep(this._sleep);
-        return await this.fetch(options, _retry - 1);
+        return await this.request(options, _retry - 1);
     }
 
-    static async _fetch(_options) {
+    static async _request(_options) {
         const options = defaultsDeep(_options, {
-            headers: this.defaultHeaders()
+            headers: this.defaultHeaders(),
         });
 
         return await axios(options);
@@ -53,7 +57,7 @@ export class ApiProvider {
 
     static defaultHeaders() {
         return {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
         };
     }
 }

@@ -25,11 +25,11 @@ export class ApiAuthProvider extends ApiProvider {
         return options.url.indexOf(this.authPath) > this.baseUrl.length;
     }
 
-    static async _fetch(options) {
+    static async _request(options) {
         if (!this.isAuthenticated() && !this.isAuthorizing(options)) {
             await this.auth();
         }
-        return await super._fetch(options);
+        return await super._request(options);
     }
 
     static async auth() {
@@ -38,7 +38,7 @@ export class ApiAuthProvider extends ApiProvider {
             method: this.authMethod || 'post',
             data: this.authBody(),
         };
-        const response = await this.fetch(options);
+        const response = await this.request(options);
         const data = response.data;
         this.token = this.authResponseToken(data);
     }
@@ -49,7 +49,7 @@ export class ApiAuthProvider extends ApiProvider {
 
     protected static authHeaders() {
         return {
-            'Authorization': 'Bearer ' + this.token
+            Authorization: 'Bearer ' + this.token,
         };
     }
 
@@ -63,15 +63,14 @@ export class ApiAuthProvider extends ApiProvider {
     }
 
     static retryCheck(error, _retry) {
-        return (_retry > 0 && error.code === 'ECONNREFUSED') ||
-            error?.response?.status === HttpStatusCode.Unauthorized;
+        return (_retry > 0 && error.code === 'ECONNREFUSED') || error?.response?.status === HttpStatusCode.Unauthorized;
     }
 
-    static async retryFetch(options, error, _retry) {
+    static async retryRequest(options, error, _retry) {
         await sleep(this._sleep);
         if (error?.response?.status === HttpStatusCode.Unauthorized) {
             await this.auth();
         }
-        return await this.fetch(options, _retry - 1);
+        return await this.request(options, _retry - 1);
     }
 }

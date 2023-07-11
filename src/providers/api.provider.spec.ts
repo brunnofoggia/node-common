@@ -3,7 +3,6 @@ import { ApiProvider } from './api.provider';
 import { reject, request, response } from '../../test/mocks/api.mock';
 
 describe('Api Provider', () => {
-
     beforeEach(async () => {
         ApiProvider._sleep = 0;
         ApiProvider.baseUrl = 'https://api.com';
@@ -11,11 +10,11 @@ describe('Api Provider', () => {
 
     it('execucao do fetch', async () => {
         jest.spyOn(ApiProvider, '_fetch').mockResolvedValueOnce(response);
-        expect(await ApiProvider.fetch(request)).toEqual(response);
+        expect(await ApiProvider.request(request)).toEqual(response);
     });
 
     it('1 unica tentativa do fetch', async () => {
-        const fetch = _.bind(ApiProvider.fetch, ApiProvider);
+        const fetch = _.bind(ApiProvider.request, ApiProvider);
         let c = 0;
         jest.spyOn(ApiProvider, '_fetch').mockResolvedValueOnce(response);
         jest.spyOn(ApiProvider, 'fetch').mockImplementationOnce(async (options) => {
@@ -23,7 +22,7 @@ describe('Api Provider', () => {
             return await fetch(options);
         });
 
-        await ApiProvider.fetch(request);
+        await ApiProvider.request(request);
         expect(c).toEqual(1);
     });
 
@@ -34,7 +33,7 @@ describe('Api Provider', () => {
             if (++c < 3) return Promise.reject(reject);
             return Promise.resolve(response);
         });
-        await ApiProvider.fetch(request);
+        await ApiProvider.request(request);
 
         expect(c).toEqual(3);
     });
@@ -47,9 +46,11 @@ describe('Api Provider', () => {
         });
 
         try {
-            await ApiProvider.fetch(request);
+            await ApiProvider.request(request);
         } catch (err) {
-            expect(() => { throw err; }).toThrowError();
+            expect(() => {
+                throw err;
+            }).toThrowError();
         }
     });
 });
