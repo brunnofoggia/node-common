@@ -118,7 +118,8 @@ export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
 
     async truncate() {
         try {
-            const query = this.getRepository().createQueryBuilder().delete();
+            const repository = this.getRepository();
+            const query = repository.createQueryBuilder().delete();
             const result = await query.execute();
             debug(`Deleted ${result.affected} rows`);
         } catch (error) {
@@ -128,7 +129,8 @@ export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
 
     deleteRecords() {
         if (typeof this._deleteRecords === 'undefined') {
-            this._deleteRecords = indexOf(keys(this.getDataSource().getMetadata(this.entity).propertiesMap), 'deletedAt') < 0;
+            const repository = this.getRepository();
+            this._deleteRecords = indexOf(keys(this.getDataSource().getMetadata(repository.target).propertiesMap), 'deletedAt') < 0;
         }
         return this._deleteRecords;
     }

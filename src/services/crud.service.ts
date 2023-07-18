@@ -1,15 +1,17 @@
 import { HttpStatusCode } from 'axios';
-import { throwHttpException } from '../utils/errors';
-
-import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
-import _ from 'lodash';
-import { IdInterface } from '../interfaces/id.interface';
+import { find, omit, result, size } from 'lodash';
 import { IsNull } from 'typeorm';
+import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
+
+import { throwHttpException } from '../utils/errors';
+import { IdInterface } from '../interfaces/id.interface';
 
 export class CrudService<ENTITY> {
     protected repository;
     protected idAttribute = 'id';
     protected _deleteRecords;
+    protected _deletedAttribute = 'deletedAt';
+    protected _updatedAttribute;
 
     getIdAttribute() {
         return this.idAttribute;
@@ -33,12 +35,12 @@ export class CrudService<ENTITY> {
          * scenario:
          * { skip: 500000, take: 50000, order: {} } (into a view, not a table)
          * solution:
-         * always have an order by
+         * always have an order by and a pk on select
          */
-        const order = _.size(options.order) ? options.order : defaultOrder;
+        const order = size(options.order) ? options.order : defaultOrder;
 
         options = {
-            ..._.omit(options, 'order'),
+            ...omit(options, 'order'),
             order,
         };
 
@@ -51,7 +53,7 @@ export class CrudService<ENTITY> {
         };
 
         if (!this.deleteRecords()) {
-            options.where.deletedAt = IsNull();
+            options.where[this._deletedAttribute] = IsNull();
         }
 
         return this._findAll(options);
@@ -97,18 +99,18 @@ export class CrudService<ENTITY> {
     }
 
     private async _create(_item: QueryDeepPartialEntity<ENTITY>, query: any = {}): Promise<IdInterface> {
-        _item[this.idAttribute] && (await this.checkIdNotTaken(_.result(_item, this.idAttribute)));
+        _item[this.idAttribute] && (await this.checkIdNotTaken(result(_item, this.idAttribute)));
 
         // to make beforeinsert work
         const item = this.getRepository().create({ ..._item });
 
         await this.getRepository().save(item);
 
-        let result: any = { id: _.result(item, this.idAttribute) };
+        let _result: any = { id: result(item, this.idAttribute) };
         if (query.find) {
-            result = await this.findById(result.id as string | number);
+            _result = await this.findById(_result.id as string | number);
         }
-        return result;
+        return _result;
     }
 
     async create(_item: QueryDeepPartialEntity<ENTITY>, query: any = {}): Promise<IdInterface | ENTITY> {
@@ -116,9 +118,10 @@ export class CrudService<ENTITY> {
     }
 
     private async _update(_item: QueryDeepPartialEntity<ENTITY>): Promise<IdInterface> {
-        await this.checkIdTaken(_.result(_item, this.idAttribute));
-        await this.getRepository().save(_item);
-        return { id: _.result(_item, this.idAttribute) };
+        await this.checkIdTaken(result(_item, this.idAttribute));
+        const item = this.updatedAt(_item);
+        await this.getRepository().save(item);
+        return { id: result(item, this.idAttribute) };
     }
 
     async update(_item: QueryDeepPartialEntity<ENTITY>): Promise<IdInterface> {
@@ -127,7 +130,7 @@ export class CrudService<ENTITY> {
 
     private async _replace(_item: QueryDeepPartialEntity<ENTITY>): Promise<IdInterface> {
         await this.getRepository().save(_item);
-        return { id: _.result(_item, this.idAttribute) };
+        return { id: result(_item, this.idAttribute) };
     }
 
     async replace(_item: QueryDeepPartialEntity<ENTITY>): Promise<IdInterface> {
@@ -137,8 +140,10 @@ export class CrudService<ENTITY> {
     private async _hide(id: number | string): Promise<IdInterface> {
         await this.checkIdTaken(id);
 
-        const item: any = { deletedAt: new Date().toISOString() };
+        let item: any = {};
+        item[this._deletedAttribute] = new Date().toISOString();
         item[this.idAttribute] = id;
+        item = this.updatedAt(item);
 
         await this.getRepository().save(item);
         return { id };
@@ -166,10 +171,6 @@ export class CrudService<ENTITY> {
         return await this._remove(id);
     }
 
-    deleteRecords() {
-        return !!this._deleteRecords;
-    }
-
     async createIfNotExists(
         _item: QueryDeepPartialEntity<ENTITY>,
         where: QueryDeepPartialEntity<ENTITY>,
@@ -180,10 +181,53 @@ export class CrudService<ENTITY> {
             item = await this.create({ ..._item }, query);
         }
 
-        let result: any = { id: _.result(item, this.idAttribute) };
+        let _result: any = { id: result(item, this.idAttribute) };
         if (query.find) {
-            result = item;
+            _result = item;
         }
-        return result;
+        return _result;
+    }
+
+    getEntity() {
+        const repository = this.getRepository();
+        return repository.target;
+    }
+
+    getDataSource() {
+        return this.getRepository().manager.connection;
+    }
+
+    getMetadata() {
+        return this.getDataSource().getMetadata(this.getEntity());
+    }
+
+    getConnectionType() {
+        return this.getDataSource().options.type;
+    }
+
+    shouldApplyManualUpdatedAt() {
+        return this.getConnectionType() === 'postgres';
+    }
+
+    updatedAt(_item) {
+        if (this.shouldApplyManualUpdatedAt()) {
+            if (!this._updatedAttribute) {
+                const metadata = this.getMetadata();
+                const column = find(metadata.columns, (column) => (result(column, 'onUpdate') + '').indexOf('CURRENT_TIMESTAMP') >= 0);
+                this._updatedAttribute = column?.propertyName;
+            }
+
+            if (this._updatedAttribute) _item[this._updatedAttribute] = new Date().toISOString();
+        }
+
+        return _item;
+    }
+
+    deleteRecords() {
+        if (typeof this._deleteRecords !== 'undefined') return this._deleteRecords;
+
+        const metadata = this.getMetadata();
+        const column = find(metadata.columns, (column) => column.propertyName === this._deletedAttribute);
+        return (this._deleteRecords = !!column);
     }
 }
