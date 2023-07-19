@@ -52,7 +52,7 @@ export class CrudService<ENTITY> {
             ...options.where,
         };
 
-        if (!this.shouldApplyDeletedAt()) {
+        if (this.shouldApplyDeletedAt()) {
             options.where[this._deletedAttribute] = IsNull();
         }
 
