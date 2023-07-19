@@ -1,7 +1,7 @@
 import _debug from 'debug';
 const debug = _debug('app:db:DynamicDatabase');
 
-import { indexOf, keys } from 'lodash';
+import { keys } from 'lodash';
 import { QueryRunner, Repository } from 'typeorm';
 import { CrudService } from './crud.service';
 // import _ from 'lodash';
@@ -125,13 +125,5 @@ export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
         } catch (error) {
             debug(error);
         }
-    }
-
-    deleteRecords() {
-        if (typeof this._deleteRecords === 'undefined') {
-            const repository = this.getRepository();
-            this._deleteRecords = indexOf(keys(this.getDataSource().getMetadata(repository.target).propertiesMap), 'deletedAt') < 0;
-        }
-        return this._deleteRecords;
     }
 }

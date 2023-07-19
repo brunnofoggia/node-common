@@ -9,7 +9,7 @@ import { IdInterface } from '../interfaces/id.interface';
 export class CrudService<ENTITY> {
     protected repository;
     protected idAttribute = 'id';
-    protected _deleteRecords;
+    protected _shouldApplyDeletedAt;
     protected _deletedAttribute = 'deletedAt';
     protected _updatedAttribute;
 
@@ -52,7 +52,7 @@ export class CrudService<ENTITY> {
             ...options.where,
         };
 
-        if (!this.deleteRecords()) {
+        if (!this.shouldApplyDeletedAt()) {
             options.where[this._deletedAttribute] = IsNull();
         }
 
@@ -138,11 +138,14 @@ export class CrudService<ENTITY> {
     }
 
     private async _hide(id: number | string): Promise<IdInterface> {
+        if (!this.shouldApplyDeletedAt())
+            throwHttpException(`couldnt find "${this._deletedAttribute}" field for soft deletion`, HttpStatusCode.NotImplemented);
+
         await this.checkIdTaken(id);
 
         let item: any = {};
-        item[this._deletedAttribute] = new Date().toISOString();
         item[this.idAttribute] = id;
+        item = this.deletedAt(item);
         item = this.updatedAt(item);
 
         await this.getRepository().save(item);
@@ -164,7 +167,7 @@ export class CrudService<ENTITY> {
     }
 
     private async _remove(id: number | string): Promise<IdInterface> {
-        return this.deleteRecords() ? this.delete(id) : this.hide(id);
+        return this.shouldApplyDeletedAt() ? this.delete(id) : this.hide(id);
     }
 
     async remove(id: number | string): Promise<IdInterface> {
@@ -232,11 +235,16 @@ export class CrudService<ENTITY> {
         return _item;
     }
 
-    deleteRecords() {
-        if (typeof this._deleteRecords !== 'undefined') return this._deleteRecords;
+    deletedAt(_item) {
+        if (this.shouldApplyDeletedAt()) _item[this._deletedAttribute] = new Date().toISOString();
+        return _item;
+    }
+
+    shouldApplyDeletedAt() {
+        if (typeof this._shouldApplyDeletedAt !== 'undefined') return this._shouldApplyDeletedAt;
 
         const metadata = this.getMetadata();
         const column = find(metadata.columns, (column) => column.propertyName === this._deletedAttribute);
-        return (this._deleteRecords = !!column);
+        return (this._shouldApplyDeletedAt = !!column);
     }
 }

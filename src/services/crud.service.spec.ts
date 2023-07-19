@@ -28,7 +28,7 @@ describe('Crud Service', () => {
         repository = module.get(getRepositoryToken(GenericEntity));
 
         service['setDeleteRecords'] = function (v) {
-            return (this._deleteRecords = v);
+            return (this._shouldApplyDeletedAt = v);
         };
         service['setDeleteRecords'](false);
     });
@@ -135,8 +135,36 @@ describe('Crud Service', () => {
         });
     });
 
+    describe('deletedAt', () => {
+        it('should not add field', async () => {
+            service['setDeleteRecords'](false);
+            jest.spyOn(service, 'shouldApplyDeletedAt').mockReturnValueOnce(false);
+            const _item = defaults({}, item);
+            const result = await service.deletedAt(_item);
+
+            expect(result).toEqual(item);
+        });
+
+        it('should add field', async () => {
+            service['setDeleteRecords'](true);
+            const propertyName = 'deletedAt';
+            jest.spyOn(service, 'shouldApplyDeletedAt').mockReturnValueOnce(true);
+            jest.spyOn(service, 'findMetadata').mockReturnValueOnce({ propertyName });
+            const _item = defaults({}, item);
+            const _result = await service.deletedAt(_item);
+            const value = result(_result, propertyName);
+
+            const test = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z/.test(value + '');
+            console.log(value);
+
+            expect(!!value).toBeTruthy();
+            expect(test).toBeTruthy();
+        });
+    });
+
     describe('hide', () => {
-        it('should return the id', async () => {
+        it('should hide and return the id', async () => {
+            service['setDeleteRecords'](true);
             jest.spyOn(repository, 'find').mockResolvedValueOnce([item]);
             jest.spyOn(repository, 'save').mockResolvedValueOnce(idResponse);
             const result = await service.hide(idResponse.id);
