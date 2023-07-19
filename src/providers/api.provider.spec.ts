@@ -8,27 +8,27 @@ describe('Api Provider', () => {
         ApiProvider.baseUrl = 'https://api.com';
     });
 
-    it('execucao do fetch', async () => {
-        jest.spyOn(ApiProvider, '_fetch').mockResolvedValueOnce(response);
+    it('execucao do request', async () => {
+        jest.spyOn(ApiProvider, '_request').mockResolvedValueOnce(response);
         expect(await ApiProvider.request(request)).toEqual(response);
     });
 
-    it('1 unica tentativa do fetch', async () => {
-        const fetch = _.bind(ApiProvider.request, ApiProvider);
+    it('1 unica tentativa do request', async () => {
+        const request = _.bind(ApiProvider.request, ApiProvider);
         let c = 0;
-        jest.spyOn(ApiProvider, '_fetch').mockResolvedValueOnce(response);
-        jest.spyOn(ApiProvider, 'fetch').mockImplementationOnce(async (options) => {
+        jest.spyOn(ApiProvider, '_request').mockResolvedValueOnce(response);
+        jest.spyOn(ApiProvider, 'request').mockImplementationOnce(async (options) => {
             c++;
-            return await fetch(options);
+            return await request(options);
         });
 
         await ApiProvider.request(request);
         expect(c).toEqual(1);
     });
 
-    it('3 tentativas do fetch', async () => {
+    it('3 tentativas do request', async () => {
         let c = 0;
-        jest.spyOn(ApiProvider, '_fetch').mockImplementation((options: any) => {
+        jest.spyOn(ApiProvider, '_request').mockImplementation((options: any) => {
             options;
             if (++c < 3) return Promise.reject(reject);
             return Promise.resolve(response);
@@ -38,9 +38,9 @@ describe('Api Provider', () => {
         expect(c).toEqual(3);
     });
 
-    it('tentativas esgotadas do fetch', async () => {
+    it('tentativas esgotadas do request', async () => {
         let c = 0;
-        jest.spyOn(ApiProvider, '_fetch').mockImplementation((options: any) => {
+        jest.spyOn(ApiProvider, '_request').mockImplementation((options: any) => {
             options;
             return Promise.reject(reject);
         });

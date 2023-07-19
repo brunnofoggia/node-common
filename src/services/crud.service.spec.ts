@@ -17,15 +17,19 @@ describe('Crud Service', () => {
                 DatabaseModule({}),
                 TypeOrmModule.forFeature([GenericEntity]),
                 CacheModule.register({
-                    isGlobal: true
-                }),],
-            providers: [
-                TestService
+                    isGlobal: true,
+                }),
             ],
+            providers: [TestService],
         }).compile();
 
         service = module.get<TestService>(TestService);
         repository = module.get(getRepositoryToken(GenericEntity));
+
+        service['setDeleteRecords'] = function (v) {
+            return (this._deleteRecords = v);
+        };
+        service['setDeleteRecords'](false);
     });
 
     it('should be defined', () => {
@@ -33,7 +37,7 @@ describe('Crud Service', () => {
     });
 
     describe('count', () => {
-        it('should return total of companies', async () => {
+        it('should return total of rows', async () => {
             const count = 2;
             jest.spyOn(repository, 'count').mockResolvedValueOnce(count);
             expect(await service.count()).toEqual(count);
@@ -63,10 +67,10 @@ describe('Crud Service', () => {
     describe('create', () => {
         it('should return the id', async () => {
             jest.spyOn(repository, 'find').mockResolvedValueOnce([]);
-            jest.spyOn(repository, "create").mockImplementationOnce((entity) => {
+            jest.spyOn(repository, 'create').mockImplementationOnce((entity) => {
                 return entity;
             });
-            jest.spyOn(repository, "save").mockImplementationOnce((entity) => {
+            jest.spyOn(repository, 'save').mockImplementationOnce((entity) => {
                 entity['id'] = idResponse.id;
             });
             const result = await service.create(create, {});
@@ -76,10 +80,10 @@ describe('Crud Service', () => {
         it('should return the entity', async () => {
             jest.spyOn(repository, 'find').mockResolvedValueOnce([]);
             jest.spyOn(repository, 'find').mockResolvedValueOnce([create]);
-            jest.spyOn(repository, "create").mockImplementationOnce((entity) => {
+            jest.spyOn(repository, 'create').mockImplementationOnce((entity) => {
                 return entity;
             });
-            jest.spyOn(repository, "save").mockImplementationOnce((entity) => {
+            jest.spyOn(repository, 'save').mockImplementationOnce((entity) => {
                 entity['id'] = idResponse.id;
             });
             const result = await service.create(create, { find: 1 });
@@ -90,7 +94,7 @@ describe('Crud Service', () => {
             const error = { code: '999' };
 
             jest.spyOn(repository, 'find').mockResolvedValueOnce([]);
-            jest.spyOn(repository, "create").mockImplementationOnce((entity) => {
+            jest.spyOn(repository, 'create').mockImplementationOnce((entity) => {
                 return entity;
             });
             jest.spyOn(repository, 'save').mockImplementationOnce(() => {
@@ -138,5 +142,4 @@ describe('Crud Service', () => {
             expect(result).toEqual(idResponse);
         });
     });
-
 });
