@@ -6,6 +6,7 @@ import { GenericEntity } from '../entities/generic';
 import { TestService } from './crud.service.test';
 
 import { DatabaseModule } from '../../test/src/modules/database/database.module';
+import { defaults, pick, result } from 'lodash';
 
 describe('Crud Service', () => {
     let service: TestService;
@@ -117,6 +118,7 @@ describe('Crud Service', () => {
 
             expect(result).toEqual(idResponse);
         });
+
         it('should throw an exception', async () => {
             const error = { code: '999' };
 
@@ -140,6 +142,27 @@ describe('Crud Service', () => {
             const result = await service.hide(idResponse.id);
 
             expect(result).toEqual(idResponse);
+        });
+    });
+
+    describe('updatedAt', () => {
+        it('should not add field', async () => {
+            jest.spyOn(service, 'shouldApplyManualUpdatedAt').mockReturnValueOnce(false);
+            const _item = defaults({}, item);
+            const result = await service.updatedAt(_item);
+
+            expect(result).toEqual(item);
+        });
+
+        it('should add field', async () => {
+            const propertyName = 'updatedAt';
+            jest.spyOn(service, 'shouldApplyManualUpdatedAt').mockReturnValueOnce(true);
+            jest.spyOn(service, 'findMetadata').mockReturnValueOnce({ propertyName });
+            const _item = defaults({}, item);
+            const _result = await service.updatedAt(_item);
+
+            const test = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z/.test(result(_result, propertyName) + '');
+            expect(test).toBeTruthy();
         });
     });
 });

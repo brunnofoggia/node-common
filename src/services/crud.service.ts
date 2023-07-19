@@ -1,5 +1,5 @@
 import { HttpStatusCode } from 'axios';
-import { find, omit, result, size } from 'lodash';
+import { filter, find, omit, result, size } from 'lodash';
 import { IsNull } from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
@@ -201,6 +201,16 @@ export class CrudService<ENTITY> {
         return this.getDataSource().getMetadata(this.getEntity());
     }
 
+    findMetadata(fn) {
+        const metadata = this.getMetadata();
+        return find(metadata, fn);
+    }
+
+    filterMetadata(fn) {
+        const metadata = this.getMetadata();
+        return filter(metadata, fn);
+    }
+
     getConnectionType() {
         return this.getDataSource().options.type;
     }
@@ -212,8 +222,7 @@ export class CrudService<ENTITY> {
     updatedAt(_item) {
         if (this.shouldApplyManualUpdatedAt()) {
             if (!this._updatedAttribute) {
-                const metadata = this.getMetadata();
-                const column = find(metadata.columns, (column) => (result(column, 'onUpdate') + '').indexOf('CURRENT_TIMESTAMP') >= 0);
+                const column: any = this.findMetadata((column) => (result(column, 'onUpdate') + '').indexOf('CURRENT_TIMESTAMP') >= 0);
                 this._updatedAttribute = column?.propertyName;
             }
 
