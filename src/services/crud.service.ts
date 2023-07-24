@@ -1,5 +1,8 @@
+import _debug from 'debug';
+const debug = _debug('app:db:CrudService');
+
 import { HttpStatusCode } from 'axios';
-import { filter, find, omit, result, size } from 'lodash';
+import { filter, find, keys, omit, result, size } from 'lodash';
 import { IsNull } from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
@@ -129,8 +132,10 @@ export class CrudService<ENTITY> {
     }
 
     private async _replace(_item: QueryDeepPartialEntity<ENTITY>): Promise<IdInterface> {
-        await this.getRepository().save(_item);
-        return { id: result(_item, this.idAttribute) };
+        await this.checkIdTaken(result(_item, this.idAttribute));
+        const item = this.updatedAt(_item);
+        await this.getRepository().save(item);
+        return { id: result(item, this.idAttribute) };
     }
 
     async replace(_item: QueryDeepPartialEntity<ENTITY>): Promise<IdInterface> {
@@ -206,7 +211,7 @@ export class CrudService<ENTITY> {
 
     findMetadata(fn) {
         const metadata = this.getMetadata();
-        return find(metadata, fn);
+        return find(metadata.columns, fn);
     }
 
     filterMetadata(fn) {
@@ -225,10 +230,12 @@ export class CrudService<ENTITY> {
     updatedAt(_item) {
         if (this.shouldApplyManualUpdatedAt()) {
             if (!this._updatedAttribute) {
-                const column: any = this.findMetadata((column) => (result(column, 'onUpdate') + '').indexOf('CURRENT_TIMESTAMP') >= 0);
+                const column: any = this.findMetadata((column) => {
+                    const onUpdate = result(column, 'onUpdate') + '';
+                    return onUpdate.indexOf('CURRENT_TIMESTAMP') >= 0;
+                });
                 this._updatedAttribute = column?.propertyName;
             }
-
             if (this._updatedAttribute) _item[this._updatedAttribute] = new Date().toISOString();
         }
 
