@@ -6,7 +6,8 @@ import { GenericEntity } from '../entities/generic';
 import { TestService } from './crud.service.test';
 
 import { DatabaseModule } from '../../test/src/modules/database/database.module';
-import { defaults, pick, result } from 'lodash';
+import { defaults, omit, pick, result } from 'lodash';
+import { HttpStatusCode } from 'axios';
 
 describe('Crud Service', () => {
     let service: TestService;
@@ -107,6 +108,41 @@ describe('Crud Service', () => {
             } catch (err) {
                 expect(err.code).toEqual(error.code);
             }
+        });
+    });
+
+    describe('update', () => {
+        it('should return the id', async () => {
+            jest.spyOn(repository, 'find').mockResolvedValueOnce([create]);
+            jest.spyOn(repository, 'save').mockImplementationOnce((entity) => entity);
+            const result = await service.update(create);
+            expect(result).toEqual(idResponse);
+        });
+
+        it('should throw not found', async () => {
+            expect.assertions(1);
+            const _err = { status: HttpStatusCode.NotFound };
+
+            jest.spyOn(repository, 'find').mockResolvedValueOnce([]);
+            await expect(service.update(create)).rejects.toThrow();
+        });
+    });
+
+    describe('replace', () => {
+        it('should create', async () => {
+            jest.spyOn(repository, 'save').mockImplementationOnce((entity) => {
+                entity['id'] = idResponse.id;
+            });
+            const result = await service.replace(omit(create, 'id'));
+            expect(result).toEqual(idResponse);
+        });
+
+        it('should update', async () => {
+            jest.spyOn(repository, 'save').mockImplementationOnce((entity) => {
+                entity['id'] = idResponse.id;
+            });
+            const result = await service.replace(create);
+            expect(result).toEqual(idResponse);
         });
     });
 

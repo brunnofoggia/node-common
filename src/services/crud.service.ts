@@ -133,7 +133,8 @@ export class CrudService<ENTITY> {
 
     // insert or update a record
     private async _replace(_item: QueryDeepPartialEntity<ENTITY>): Promise<IdInterface> {
-        const item = this.updatedAt(_item);
+        const id = result(_item, this.idAttribute);
+        const item = !id ? _item : this.updatedAt(_item);
         await this.getRepository().save(item);
         return { id: result(item, this.idAttribute) };
     }
