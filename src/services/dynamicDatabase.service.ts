@@ -18,20 +18,26 @@ export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
     protected entity;
 
     static setDatabaseConnect(DatabaseConnect) {
-        this.DatabaseConnect = DatabaseConnect;
+        DynamicDatabase.DatabaseConnect = DatabaseConnect;
     }
 
     static async setDataSource({ poolId = 'default', database = '', databaseDir = '', alias = '', synchronize = false }) {
         const _alias = alias || database;
         const datasourcePath = this.defineDatasourcePath(_alias, poolId);
         if (!this.getDataSource(_alias, poolId)) {
-            DynamicDatabase.dataSources[datasourcePath] = await this.DatabaseConnect({ database, databaseDir, synchronize });
+            DynamicDatabase.dataSources[datasourcePath] = await DynamicDatabase.DatabaseConnect({ database, databaseDir, synchronize });
+            debug(
+                'connected to database',
+                `"${DynamicDatabase.dataSources[datasourcePath]?.options?.database || '?'}"`,
+                'with poolId',
+                datasourcePath,
+            );
         }
-        return this.getDataSource(_alias, poolId);
+        return DynamicDatabase.getDataSource(_alias, poolId);
     }
 
     static getDataSource(alias, poolId = 'default') {
-        return DynamicDatabase.dataSources[this.defineDatasourcePath(alias, poolId)];
+        return DynamicDatabase.dataSources[DynamicDatabase.defineDatasourcePath(alias, poolId)];
     }
 
     static defineDatasourcePath(alias, poolId = 'default') {
@@ -39,24 +45,25 @@ export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
     }
 
     static listConnections() {
-        return keys(this.dataSources);
+        return keys(DynamicDatabase.dataSources);
     }
 
     static async closeConnections(poolId = 'default') {
         for (const datasourcePath in DynamicDatabase.dataSources) {
             if (poolId && !datasourcePath.startsWith(poolId)) continue;
 
-            await this._closeConnection(datasourcePath);
+            await DynamicDatabase._closeConnection(datasourcePath);
         }
     }
 
     static async closeConnection(alias, poolId = 'default') {
-        const datasourcePath = this.defineDatasourcePath(alias, poolId);
-        await this._closeConnection(datasourcePath);
+        const datasourcePath = DynamicDatabase.defineDatasourcePath(alias, poolId);
+        await DynamicDatabase._closeConnection(datasourcePath);
     }
 
     static async _closeConnection(datasourcePath) {
         // console.log('close this conn', datasourcePath);
+        debug('closed connection', `"${DynamicDatabase.dataSources[datasourcePath]?.options?.database || '?'}"`, 'with poolId', datasourcePath);
         await DynamicDatabase.dataSources[datasourcePath]?.destroy();
         delete DynamicDatabase.dataSources[datasourcePath];
         // DynamicDatabase.dataSources = omit(DynamicDatabase.dataSources, datasourcePath);
