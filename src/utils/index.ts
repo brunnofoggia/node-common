@@ -14,6 +14,7 @@ export const queuelize = async (condition, _execute, config: any = {}) => {
     config = defaults(config, queuelizeDefaults);
     if (!config.params) config.params = {};
 
+    // setup
     const options = defaults(config._options || {}, { parts: 0, finished: 0, timeSpent: 0 });
     const finish = async () => {
         if (options.error) throw options.error;
@@ -26,6 +27,8 @@ export const queuelize = async (condition, _execute, config: any = {}) => {
         return await finish();
     };
 
+    // process
+    typeof config.before === 'function' && (await config.before(config.params));
     while (condition(config.params)) {
         if (options.error) break;
         // makes possible to trigger some items and wait for them to finish
@@ -53,6 +56,7 @@ export const queuelize = async (condition, _execute, config: any = {}) => {
     }
 
     await finish();
+    typeof config.after === 'function' && (await config.after(config.params));
 };
 
 export const getDateForTimezone = (_timezoneOffset = 0, date = undefined, keepLocalTime = false) => {
