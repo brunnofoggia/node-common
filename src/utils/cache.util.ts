@@ -26,17 +26,20 @@ export class CacheUtil {
         return cacheKey.join('#');
     }
 
-    async result(cacheKey: string, callback: any, cacheTTL = 0, cacheEmpty = false): Promise<any> {
+    async result(cacheKey: string, callback: any, cacheTTL = 0, options: any = { storeEmptyCache: false, forceUpdate: 0 }): Promise<any> {
         if (!CacheUtil.isCacheActivated) return await callback();
-        const cache: string = await this.manager.get(cacheKey);
+
+        const cache: string = +options.forceUpdate ? undefined : await this.manager.get(cacheKey);
+        const ttl = cacheTTL || this.ttl || 3600;
 
         let result: any = null;
         try {
             result = JSON.parse(cache);
         } catch (err) {
             result = await callback();
-            if (cacheEmpty || result) // skip cache on empty result
-                await this.manager.set(cacheKey, JSON.stringify(result), { ttl: cacheTTL || this.ttl || 3600 });
+            if (options.storeEmptyCache || result)
+                // skip cache on empty result
+                await this.manager.set(cacheKey, JSON.stringify(result), { ttl });
         }
 
         return result;
