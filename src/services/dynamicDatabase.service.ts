@@ -17,6 +17,11 @@ export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
     protected databaseAlias = 'default';
     protected entity;
 
+    constructor(poolId = null) {
+        super();
+        this.setPool(poolId);
+    }
+
     static setDatabaseConnect(DatabaseConnect) {
         DynamicDatabase.DatabaseConnect = DatabaseConnect;
     }
@@ -69,10 +74,8 @@ export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
         // DynamicDatabase.dataSources = omit(DynamicDatabase.dataSources, datasourcePath);
     }
 
-    constructor(poolId = '') {
-        super();
-
-        if (poolId) this.poolId = poolId;
+    setPool(poolId) {
+        if (typeof poolId === 'string') this.poolId = poolId;
     }
 
     initialize() {
@@ -84,7 +87,7 @@ export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
     }
 
     setDataSource() {
-        if (!this.dataSource && this.databaseAlias) {
+        if (!this.dataSource && this.databaseAlias && this.poolId) {
             this.dataSource = DynamicDatabase.getDataSource(this.databaseAlias, this.poolId);
         }
         return this.dataSource;
@@ -96,7 +99,7 @@ export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
     }
 
     setRepository() {
-        if (!this.repository && this.entity) {
+        if (!this.repository && this.entity && this.poolId) {
             const datasource = this.getDataSource();
             if (!datasource) throw new Error(`connection not found. alias: ${this.databaseAlias} , poolId: ${this.poolId}`);
             this.repository = datasource.getRepository(this.entity);
