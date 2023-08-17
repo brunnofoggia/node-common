@@ -1,6 +1,6 @@
 {
     "name": "node-common",
-    "version": "1.15.0-beta.1",
+    "version": "1.16.0-beta.1",
     "description": "",
     "license": "ISC",
     "author": "Bruno Foggia",
@@ -18,7 +18,8 @@
     },
     "dependencies": {
         "dayjs": "^1.11.9",
-        "lodash": "^4.17.21"
+        "lodash": "^4.17.21",
+        "typeorm-cursor-pagination": "^0.10.1"
     },
     "devDependencies": {
         "@commitlint/config-conventional": "^17.4.4",
