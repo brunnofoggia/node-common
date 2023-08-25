@@ -1,19 +1,19 @@
-const isTestEnv = () => process.env.NODE_ENV === 'test';
+const isTestEnv = () => process.env.NODE_ENV === 'test' && (!process.env.TEST_DB_TYPE || process.env.TEST_DB_TYPE === 'sqlite');
 
 const sqliteType = {
     json: 'text',
     jsonb: 'text',
     enum: 'simple-array',
-    timestamptz: 'datetime'
+    timestamptz: 'datetime',
 };
 
 const typeSettings = {
-    'datetime': (settings) => {
+    datetime: (settings) => {
         settings.default = null;
         delete settings.onUpdate;
         return settings;
     },
-    'text': (settings) => {
+    text: (settings) => {
         settings.default = null;
         return settings;
     },

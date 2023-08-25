@@ -17,9 +17,9 @@ export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
     protected databaseAlias = 'default';
     protected entity;
 
-    constructor(poolId = null) {
+    constructor(poolIdOrDataSource = null) {
         super();
-        this.setPool(poolId);
+        this.setPoolOrDataSource(poolIdOrDataSource);
     }
 
     static setDatabaseConnect(DatabaseConnect) {
@@ -74,8 +74,9 @@ export class DynamicDatabase<ENTITY> extends CrudService<ENTITY> {
         // DynamicDatabase.dataSources = omit(DynamicDatabase.dataSources, datasourcePath);
     }
 
-    setPool(poolId) {
-        if (typeof poolId === 'string') this.poolId = poolId;
+    setPoolOrDataSource(value) {
+        if (typeof value === 'string') this.poolId = value;
+        else if (value) this.dataSource = value;
     }
 
     initialize() {
