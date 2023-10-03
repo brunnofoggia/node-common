@@ -27,8 +27,29 @@ export const queuelize = async (condition, _execute, config: any = {}) => {
         return await finish();
     };
 
+    const execute = async (params) => {
+        try {
+            const result = await _execute(params, omit(options, 'params'));
+            if (!config.async && result === false) options.break = true;
+            options.finished++;
+        } catch (error) {
+            options.error = error;
+        }
+    };
+
     // process
     typeof config.before === 'function' && (await config.before(config.params));
+    if (typeof condition === 'function') {
+        await queuelizeWhile(condition, _execute, config, { options, execute, finish });
+    } else {
+        await queuelizeFor(condition, _execute, config, { options, execute, finish });
+    }
+
+    await finish();
+    typeof config.after === 'function' && (await config.after(config.params));
+};
+
+const queuelizeWhile = async (condition, _execute, config: any = {}, { options, execute, finish }) => {
     while (condition(config.params)) {
         if (options.error) break;
         // makes possible to trigger some items and wait for them to finish
@@ -39,24 +60,32 @@ export const queuelize = async (condition, _execute, config: any = {}) => {
         }
 
         options.parts++;
-        const execute = async (params) => {
-            try {
-                const result = await _execute(params, omit(options, 'params'));
-                if (!config.async && result === false) options.break = true;
-                options.finished++;
-            } catch (error) {
-                options.error = error;
-            }
-        };
 
         const paramsClone = cloneDeep(config.params);
         // is possible to make the process synchronous
         config.async ? execute(paramsClone) : await execute(paramsClone);
         if (options.break) break;
     }
+};
 
-    await finish();
-    typeof config.after === 'function' && (await config.after(config.params));
+const queuelizeFor = async (condition, _execute, config: any = {}, { options, execute, finish }) => {
+    for await (const line of condition) {
+        if (options.error) break;
+        // makes possible to trigger some items and wait for them to finish
+        // before trigger more
+        if (config.step > 0 && options.parts % config.step === 0) {
+            await finish();
+            options.timeSpent = 0;
+        }
+
+        options.parts++;
+
+        const paramsClone = cloneDeep(config.params);
+        paramsClone.line = line;
+        // is possible to make the process synchronous
+        config.async ? execute(paramsClone) : await execute(paramsClone);
+        if (options.break) break;
+    }
 };
 
 export const getDateForTimezone = (_timezoneOffset = 0, date = undefined, keepLocalTime = false) => {
