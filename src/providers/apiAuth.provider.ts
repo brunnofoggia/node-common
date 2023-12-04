@@ -7,7 +7,7 @@ import { HttpStatusCode } from 'axios';
 import { ApiProvider } from './api.provider';
 import { sleep } from '../utils';
 
-export class ApiAuthProvider extends ApiProvider {
+export abstract class ApiAuthProvider extends ApiProvider {
     static authPath = '';
     static authMethod = 'post';
 
@@ -37,6 +37,7 @@ export class ApiAuthProvider extends ApiProvider {
             url: this.authPath,
             method: this.authMethod || 'post',
             data: this.authBody(),
+            headers: this.authenticationHeaders(),
         };
         const response = await this.request(options);
         const data = response.data;
@@ -47,7 +48,11 @@ export class ApiAuthProvider extends ApiProvider {
         return {};
     }
 
-    protected static authHeaders() {
+    protected static authenticationHeaders() {
+        return {};
+    }
+
+    protected static authorizationHeaders() {
         return {
             Authorization: 'Bearer ' + this.token,
         };
@@ -56,7 +61,7 @@ export class ApiAuthProvider extends ApiProvider {
     static defaultHeaders() {
         let defaultHeaders: any = super.defaultHeaders();
         if (this.isAuthenticated()) {
-            defaultHeaders = _.defaultsDeep(defaultHeaders, this.authHeaders());
+            defaultHeaders = _.defaultsDeep(defaultHeaders, this.authorizationHeaders());
         }
 
         return defaultHeaders;
