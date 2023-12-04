@@ -54,6 +54,7 @@ export class ApiProvider {
             headers: this.defaultHeaders(),
         });
 
+        debug('pure request', options);
         return await axios(options);
     }
 
