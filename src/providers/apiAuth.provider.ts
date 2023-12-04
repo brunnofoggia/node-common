@@ -36,7 +36,7 @@ export abstract class ApiAuthProvider extends ApiProvider {
         const options = {
             url: this.authPath,
             method: this.authMethod || 'post',
-            data: this.authBody(),
+            data: this.authenticationBody(),
             headers: this.authenticationHeaders(),
         };
         const response = await this.request(options);
@@ -44,7 +44,7 @@ export abstract class ApiAuthProvider extends ApiProvider {
         this.token = this.authResponseToken(data);
     }
 
-    protected static authBody() {
+    protected static authenticationBody() {
         return {};
     }
 
