@@ -15,6 +15,7 @@ export class ApiProvider {
     static async request(options, _retry = 3) {
         if (!this.baseUrl) throwHttpException('api base url not found', HttpStatusCode.BadGateway);
         const url = /^http/.test(options.url) ? options.url : [this.baseUrl, options.url].join('/');
+        debug(url, options);
 
         try {
             return await this._request({
@@ -43,6 +44,7 @@ export class ApiProvider {
     }
 
     static async retryRequest(options, error, _retry) {
+        debug('retrying request', options.url);
         await sleep(this._sleep);
         return await this.request(options, _retry - 1);
     }

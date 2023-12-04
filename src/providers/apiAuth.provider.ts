@@ -1,7 +1,7 @@
 import _debug from 'debug';
 const debug = _debug('app:apiAuthProvider');
 
-import _ from 'lodash';
+import { defaultsDeep } from 'lodash';
 import { HttpStatusCode } from 'axios';
 
 import { ApiProvider } from './api.provider';
@@ -33,12 +33,14 @@ export abstract class ApiAuthProvider extends ApiProvider {
     }
 
     static async auth() {
+        debug('authenticating');
         const options = {
             url: this.authPath,
             method: this.authMethod || 'post',
             data: this.authenticationBody(),
             headers: this.authenticationHeaders(),
         };
+        debug(options);
         const response = await this.request(options);
         const data = response.data;
         this.token = this.authResponseToken(data);
@@ -61,7 +63,7 @@ export abstract class ApiAuthProvider extends ApiProvider {
     static defaultHeaders() {
         let defaultHeaders: any = super.defaultHeaders();
         if (this.isAuthenticated()) {
-            defaultHeaders = _.defaultsDeep(defaultHeaders, this.authorizationHeaders());
+            defaultHeaders = defaultsDeep(this.authorizationHeaders(), defaultHeaders);
         }
 
         return defaultHeaders;
