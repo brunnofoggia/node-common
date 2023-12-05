@@ -51,6 +51,7 @@ export class ApiProvider {
 
     static async _request(_options) {
         const options = defaultsDeep(_options, {
+            method: _options.data ? 'post' : 'get',
             headers: this.defaultHeaders(),
         });
 

@@ -11,7 +11,7 @@ export abstract class ApiAuthProvider extends ApiProvider {
     static authPath = '';
     static authMethod = 'post';
 
-    static authResponseToken(data) {
+    static authenticationResponseToken(data) {
         return '';
     }
 
@@ -27,12 +27,12 @@ export abstract class ApiAuthProvider extends ApiProvider {
 
     static async _request(options) {
         if (!this.isAuthenticated() && !this.isAuthorizing(options)) {
-            await this.auth();
+            await this.authentication();
         }
         return await super._request(options);
     }
 
-    static async auth() {
+    static async authentication() {
         debug('authenticating');
         const options = {
             url: this.authPath,
@@ -43,7 +43,7 @@ export abstract class ApiAuthProvider extends ApiProvider {
         debug(options);
         const response = await this.request(options);
         const data = response.data;
-        this.token = this.authResponseToken(data);
+        this.token = this.authenticationResponseToken(data);
     }
 
     protected static authenticationBody() {
@@ -54,7 +54,7 @@ export abstract class ApiAuthProvider extends ApiProvider {
         return {};
     }
 
-    protected static authorizationHeaders() {
+    protected static loggedHeaders() {
         return {
             Authorization: 'Bearer ' + this.token,
         };
@@ -63,7 +63,7 @@ export abstract class ApiAuthProvider extends ApiProvider {
     static defaultHeaders() {
         let defaultHeaders: any = super.defaultHeaders();
         if (this.isAuthenticated()) {
-            defaultHeaders = defaultsDeep(this.authorizationHeaders(), defaultHeaders);
+            defaultHeaders = defaultsDeep(this.loggedHeaders(), defaultHeaders);
         }
 
         return defaultHeaders;
@@ -76,7 +76,7 @@ export abstract class ApiAuthProvider extends ApiProvider {
     static async retryRequest(options, error, _retry) {
         await sleep(this._sleep);
         if (error?.response?.status === HttpStatusCode.Unauthorized) {
-            await this.auth();
+            await this.authentication();
         }
         return await this.request(options, _retry - 1);
     }
