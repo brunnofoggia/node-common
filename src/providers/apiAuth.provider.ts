@@ -1,5 +1,5 @@
 import _debug from 'debug';
-const debug = _debug('app:apiAuthProvider');
+const debug = _debug('api:apiAuthProvider');
 
 import { defaultsDeep } from 'lodash';
 import { HttpStatusCode } from 'axios';
