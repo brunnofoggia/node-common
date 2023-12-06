@@ -1,5 +1,5 @@
 import _debug from 'debug';
-const debug = _debug('app:ApiProvider');
+const debug = _debug('api:ApiProvider');
 
 import axios from 'axios';
 import { defaultsDeep } from 'lodash';
