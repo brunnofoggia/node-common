@@ -9,6 +9,10 @@ import { throwHttpException } from './errors';
 
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+export const getClassFromImport = (_import, name = 'default') => {
+    return _import[name] ? getClassFromImport(_import[name], name) : _import;
+};
+
 const queuelizeDefaults = { checkInterval: 100, timeout: 60000, step: 0, async: 1 };
 export const queuelize = async (condition, _execute, config: any = {}) => {
     config = defaults(config, queuelizeDefaults);
