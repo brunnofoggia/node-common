@@ -11,7 +11,17 @@ export const env = (key, _default = '', group = 'DEFAULT') => {
     values.push(key);
 
     const path: string = values.join('_');
-    const value = process.env[path] || _default;
 
+    const value = process.env[path] || _default;
+    const [interpolated, envName] = interpolateEnvValue(value);
+
+    if (interpolated) return process.env[envName] || _default;
     return value;
+};
+
+export const interpolateEnvValue = (value) => {
+    const matches = (value || '').match(/^\$\{(\w+)\}$/);
+    if (!matches) return [false, value];
+
+    return [true, matches[1]];
 };
